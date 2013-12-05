@@ -968,7 +968,7 @@ int flandmark_detect_base(uint8_t* face_image, FLANDMARK_Model* model, double * 
 	return 0;
 }
 
-int flandmark_detect(IplImage *img, int *bbox, FLANDMARK_Model *model, double *landmarks, int *bw_margin)
+int flandmark_detect(const cv::Mat & img, int *bbox, FLANDMARK_Model *model, double *landmarks, int *bw_margin)
 {
     int retval = 0;
 
@@ -1024,36 +1024,36 @@ void flandmark_maximize_gdotprod(double * maximum, double * idx, const double * 
 		}
 	}
 }
-
-//int flandmark_imcrop(IplImage *input, IplImage *output, const CvRect region, FLANDMARK_Model *model)
-int flandmark_imcrop(IplImage *input, IplImage *output, const CvRect region)
-{
-	if (input->width <= 0 || input->height <= 0 || region.width <= 0 || region.height <= 0)
-	{
-		return 1;
-	}
-
-	if (input->depth != IPL_DEPTH_8U)
-	{
-		return 1;
-	}
-
-	cvSetImageROI(input, region);
-    if (output->width < region.width || output->height < region.height)
-	{
-		cvReleaseImage(&output);
-        output = cvCreateImage(cvSize(region.width, region.height), IPL_DEPTH_8U, 1);
-	} else {
-		output->width = region.width;
-		output->height = region.height;
-	}
-	cvCopy(input, output, NULL);
-	cvResetImageROI(input);
-
-	return 0;
-}
-
-int flandmark_get_normalized_image_frame(IplImage *input, const int bbox[], double *bb, uint8_t *face_img, FLANDMARK_Model *model)
+//
+////int flandmark_imcrop(IplImage *input, IplImage *output, const CvRect region, FLANDMARK_Model *model)
+//int flandmark_imcrop(IplImage *input, IplImage *output, const CvRect region)
+//{
+//	if (input->width <= 0 || input->height <= 0 || region.width <= 0 || region.height <= 0)
+//	{
+//		return 1;
+//	}
+//
+//	if (input->depth != IPL_DEPTH_8U)
+//	{
+//		return 1;
+//	}
+//
+//	cvSetImageROI(input, region);
+//    if (output->width < region.width || output->height < region.height)
+//	{
+//		cvReleaseImage(&output);
+//        output = cvCreateImage(cvSize(region.width, region.height), IPL_DEPTH_8U, 1);
+//	} else {
+//		output->width = region.width;
+//		output->height = region.height;
+//	}
+//	cvCopy(input, output, NULL);
+//	cvResetImageROI(input);
+//
+//	return 0;
+//}
+//
+int flandmark_get_normalized_image_frame(const cv::Mat & input, const int bbox[], double *bb, uint8_t *face_img, FLANDMARK_Model *model)
 {
 	bool flag;
 	int d[2];
@@ -1070,38 +1070,26 @@ int flandmark_get_normalized_image_frame(IplImage *input, const int bbox[], doub
     bb[2] = (c[0] + nd[0]/2.0f);
     bb[3] = (c[1] + nd[1]/2.0f);
 
-    flag = bb[0] > 0 && bb[1] > 0 && bb[2] < input->width && bb[3] < input->height
-		&& bbox[0] > 0 && bbox[1] > 0 && bbox[2] < input->width && bbox[3] < input->height;
+    flag = bb[0] > 0 && bb[1] > 0 && bb[2] < input.cols && bb[3] < input.rows
+		&& bbox[0] > 0 && bbox[1] > 0 && bbox[2] < input.cols && bbox[3] < input.rows;
+
 
 	if (!flag)
 	{
 		return 1;
 	}
-
-    IplImage *croppedImage = cvCreateImage(cvSize(input->width, input->height), IPL_DEPTH_8U, 1);
-
-    IplImage *resizedImage = cvCreateImage(cvSize(model->data.options.bw[0], model->data.options.bw[1]), IPL_DEPTH_8U, 1);
-
 	// crop and resize image to normalized frame
-    if(flandmark_imcrop(input, croppedImage, cvRect((int)bb[0], (int)bb[1], (int)bb[2]-(int)bb[0]+1, (int)bb[3]-(int)bb[1]+1)))
-	{
-		// something was bad
-		return 1;
-	}
-    // resize
-    cvResize(croppedImage, resizedImage, CV_INTER_CUBIC);
+    cv::Mat croppedImage = input(cv::Rect((int)bb[0], (int)bb[1], (int)bb[2]-(int)bb[0]+1, (int)bb[3]-(int)bb[1]+1));
+    cv::Mat resizedImage; 
+    cv::resize( croppedImage, resizedImage,cv::Size(model->data.options.bw[0], model->data.options.bw[1]),0,0,cv::INTER_CUBIC);
 
-	// tranform IplImage to simple 1D uint8 array representing 2D uint8 normalized image frame
+	// flatten the cv::Mat to simple 1D uint8 array representing 2D uint8 normalized image frame
 	for (int x = 0; x < model->data.options.bw[0]; ++x)
 	{
 		for (int y = 0; y < model->data.options.bw[1]; ++y)
 		{
-            face_img[INDEX(x, y, model->data.options.bw[1])] = (uint8_t)((resizedImage->imageData + resizedImage->widthStep*x)[y]);
+            face_img[INDEX(x, y, model->data.options.bw[1])] = resizedImage.at<uchar>(x,y); // WARN x y swapped
 		}
 	}
-
-    cvReleaseImage(&croppedImage);
-    cvReleaseImage(&resizedImage);
-
 	return 0;
 }

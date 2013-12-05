@@ -12,8 +12,8 @@
 #define __FLANDMARK_DETECTOR_H_
 
 #include "msvc-compat.h"
-#include <cv.h>
-#include <cvaux.h>
+#include <opencv2/core/core.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
 // index row-order matrices
 #define INDEX(ROW, COL, NUM_ROWS) ((COL)*(NUM_ROWS)+(ROW))
@@ -156,13 +156,13 @@ void flandmark_maximize_gdotprod(double *maximum, double *idx, const double *fir
  *
  *
  */
-int flandmark_get_normalized_image_frame(IplImage *input, const int bbox[], double *bb, uint8_t *face_img, FLANDMARK_Model *model);
-
-/**
- * Function imcrop
- *
- */
-int flandmark_imcrop(IplImage *input, IplImage *output, const CvRect region);
+int flandmark_get_normalized_image_frame( const cv::Mat &input, const int bbox[], double *bb, uint8_t *face_img, FLANDMARK_Model *model);
+//
+///**
+// * Function imcrop
+// *
+// */
+//int flandmark_imcrop(IplImage *input, IplImage *output, const CvRect region);
 
 /**
  * Function argmax
@@ -188,6 +188,6 @@ int flandmark_detect_base(uint8_t *face_image, FLANDMARK_Model *model, double *l
  * Estimates positions of facial landmarks given the image and the bounding box of the detected face
  *
  */
-int flandmark_detect(IplImage *img, int * bbox, FLANDMARK_Model *model, double *landmarks, int * bw_margin = 0);
+int flandmark_detect(const cv::Mat & img, int * bbox, FLANDMARK_Model *model, double *landmarks, int * bw_margin = 0);
 
 #endif // __LIBFLD_DETECTOR_H_
