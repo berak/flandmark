@@ -1088,7 +1088,7 @@ int flandmark_get_normalized_image_frame(const cv::Mat & input, const int bbox[]
 	{
 		for (int y = 0; y < model->data.options.bw[1]; ++y)
 		{
-            face_img[INDEX(x, y, model->data.options.bw[1])] = resizedImage.at<uchar>(x,y); // WARN x y swapped
+            face_img[INDEX(y, x, model->data.options.bw[1])] = resizedImage.at<uchar>(y,x); 
 		}
 	}
 	return 0;
